@@ -1,0 +1,57 @@
+[
+	{
+		"Name": "Resource_Wood",
+		"Resource Type": "Wood",
+		"CurrentAmount": 0
+	},
+	{
+		"Name": "Resourse_Stone",
+		"Resource Type": "Stone",
+		"CurrentAmount": 0
+	},
+	{
+		"Name": "Resourse_IronOre",
+		"Resource Type": "IronOre",
+		"CurrentAmount": 0
+	},
+	{
+		"Name": "Resourse_IronIngot",
+		"Resource Type": "IronIngot",
+		"CurrentAmount": 0
+	},
+	{
+		"Name": "Resource_Wheat",
+		"Resource Type": "Wheat",
+		"CurrentAmount": 0
+	},
+	{
+		"Name": "NewRow_2",
+		"Resource Type": "Hops",
+		"CurrentAmount": 0
+	},
+	{
+		"Name": "NewRow_3",
+		"Resource Type": "Meat",
+		"CurrentAmount": 0
+	},
+	{
+		"Name": "NewRow_4",
+		"Resource Type": "Fruit",
+		"CurrentAmount": 0
+	},
+	{
+		"Name": "NewRow_5",
+		"Resource Type": "Gold",
+		"CurrentAmount": 0
+	},
+	{
+		"Name": "NewRow_6",
+		"Resource Type": "Happiness",
+		"CurrentAmount": 0
+	},
+	{
+		"Name": "NewRow_7",
+		"Resource Type": "Horse",
+		"CurrentAmount": 0
+	}
+]
