@@ -26,5 +26,10 @@ public:
 	 * @param TraceDistance - Distance for obstacle detection.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "RTS Movement")
-	static void MoveUnitWithSteering(AActor* UnitActor, FVector TargetLocation, float DeltaTime, float MoveSpeed, float RotationSpeed = 5.0f, float AvoidanceStrength = 45.0f, float TraceDistance = 150.0f);
+	static bool MoveUnitWithSteering(AActor* UnitActor, FVector TargetLocation, float DeltaTime, float MoveSpeed, float RotationSpeed = 5.0f, float AvoidanceStrength = 45.0f, float TraceDistance = 150.0f);
+
+	UFUNCTION(BlueprintCallable, Category = "RTS Movement")
+	// Updated function signature with return type TArray<bool> instead of void
+	static TArray<bool> MoveUnitsInFormation(const FVector& TargetLocation, const TArray<AActor*>& Units, float Spacing, float DeltaTime, float MoveSpeed, float RotationSpeed = 5.0f, float AvoidanceStrength = 45.0f, float TraceDistance = 150.0f);
+
 };
