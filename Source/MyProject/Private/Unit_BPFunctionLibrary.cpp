@@ -15,34 +15,45 @@ bool UUnit_BPFunctionLibrary::MoveUnitWithSteering(AActor* UnitActor, FVector Ta
     FVector MoveDirection = (TargetLocation - CurrentLocation).GetSafeNormal();
     float DistanceToTarget = FVector::Dist(CurrentLocation, TargetLocation);
 
-    // If the unit is close enough to the target, stop moving and return true
-    if (DistanceToTarget < 100.0f) // Threshold to determine arrival
+    // Early exit if the unit is close enough to the target
+    if (DistanceToTarget < 100.0f)
     {
         return true;
     }
 
-    FHitResult ForwardHit, LeftHit, RightHit;
+    // Setup for trace start
     FVector TraceStart = CurrentLocation + FVector(0, 0, 50);
+
+    // Helper function for performing line traces
+    auto PerformLineTrace = [&](FVector Start, FVector End) -> bool
+        {
+            FHitResult HitResult;
+            FCollisionQueryParams TraceParams;
+            TraceParams.AddIgnoredActor(UnitActor);
+            ECollisionChannel CustomTraceChannel = ECC_GameTraceChannel1;
+            bool bHit = UnitActor->GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, CustomTraceChannel, TraceParams);
+            return bHit;
+        };
+
+    // Perform line traces for forward, left, and right
     FVector ForwardTraceEnd = TraceStart + (ForwardVector * TraceDistance);
     FVector LeftTraceEnd = TraceStart + (ForwardVector.RotateAngleAxis(-AvoidanceStrength, FVector::UpVector) * TraceDistance);
     FVector RightTraceEnd = TraceStart + (ForwardVector.RotateAngleAxis(AvoidanceStrength, FVector::UpVector) * TraceDistance);
 
-    FCollisionQueryParams TraceParams;
-    TraceParams.AddIgnoredActor(UnitActor);
-    ECollisionChannel CustomTraceChannel = ECC_GameTraceChannel1;
+    bool bHitForward = PerformLineTrace(TraceStart, ForwardTraceEnd);
+    bool bHitLeft = PerformLineTrace(TraceStart, LeftTraceEnd);
+    bool bHitRight = PerformLineTrace(TraceStart, RightTraceEnd);
 
-    bool bHitForward = UnitActor->GetWorld()->LineTraceSingleByChannel(ForwardHit, TraceStart, ForwardTraceEnd, CustomTraceChannel, TraceParams);
+    // Draw debug lines for visualization
     DrawDebugLine(UnitActor->GetWorld(), TraceStart, ForwardTraceEnd, FColor::Red, false, 0.1f);
-
-    bool bHitLeft = UnitActor->GetWorld()->LineTraceSingleByChannel(LeftHit, TraceStart, LeftTraceEnd, CustomTraceChannel, TraceParams);
     DrawDebugLine(UnitActor->GetWorld(), TraceStart, LeftTraceEnd, FColor::Green, false, 0.1f);
-
-    bool bHitRight = UnitActor->GetWorld()->LineTraceSingleByChannel(RightHit, TraceStart, RightTraceEnd, CustomTraceChannel, TraceParams);
     DrawDebugLine(UnitActor->GetWorld(), TraceStart, RightTraceEnd, FColor::Blue, false, 0.1f);
 
+    // Adjust rotation based on avoidance behavior
     FRotator DesiredRotation = MoveDirection.Rotation();
     if (bHitForward)
     {
+        // Rotate away from obstacles if forward is blocked
         if (!bHitRight)
         {
             DesiredRotation = (ForwardVector.RotateAngleAxis(AvoidanceStrength, FVector::UpVector)).Rotation();
@@ -53,14 +64,17 @@ bool UUnit_BPFunctionLibrary::MoveUnitWithSteering(AActor* UnitActor, FVector Ta
         }
     }
 
+    // Smooth rotation towards desired direction
     FRotator NewRotation = FMath::RInterpTo(UnitActor->GetActorRotation(), DesiredRotation, DeltaTime, RotationSpeed);
     UnitActor->SetActorRotation(NewRotation);
 
-    FVector NewLocation = CurrentLocation + (UnitActor->GetActorForwardVector() * MoveSpeed * DeltaTime);
+    // Move the actor forward
+    FVector NewLocation = CurrentLocation + (ForwardVector * MoveSpeed * DeltaTime);
     UnitActor->SetActorLocation(NewLocation);
 
     return false; // Still moving towards target
 }
+
 
 
 TArray<FVector> UUnit_BPFunctionLibrary::GetFormationPositions(const FVector& TargetLocation, const TArray<AActor*>& Units, float Spacing)
