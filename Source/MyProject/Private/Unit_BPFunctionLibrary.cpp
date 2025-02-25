@@ -63,11 +63,10 @@ bool UUnit_BPFunctionLibrary::MoveUnitWithSteering(AActor* UnitActor, FVector Ta
 }
 
 
-TArray<bool> UUnit_BPFunctionLibrary::MoveUnitsInFormation(const FVector& TargetLocation, const TArray<AActor*>& Units, float Spacing, float DeltaTime, float MoveSpeed, float RotationSpeed, float AvoidanceStrength, float TraceDistance)
+TArray<FVector> UUnit_BPFunctionLibrary::GetFormationPositions(const FVector& TargetLocation, const TArray<AActor*>& Units, float Spacing)
 {
-    TArray<bool> UnitArrivals; // To store the arrival status of each unit
-
-    if (Units.Num() == 0) return UnitArrivals;
+    TArray<FVector> FormationPositions;
+    if (Units.Num() == 0) return FormationPositions;
 
     int32 GridSize = FMath::CeilToInt(FMath::Sqrt(static_cast<float>(Units.Num())));
 
@@ -80,20 +79,19 @@ TArray<bool> UUnit_BPFunctionLibrary::MoveUnitsInFormation(const FVector& Target
     {
         for (int32 Col = 0; Col < GridSize; ++Col)
         {
-            if (Index >= Units.Num()) return UnitArrivals;
+            if (Index >= Units.Num()) return FormationPositions;
 
             // Calculate the target location for the current unit, offset to center the grid
             FVector UnitTargetLocation = TargetLocation + FVector(Row * Spacing, Col * Spacing, 0) - GridOffset;
-
-            // Call MoveUnitWithSteering and store the result in the UnitArrivals array
-            bool bArrived = MoveUnitWithSteering(Units[Index], UnitTargetLocation, DeltaTime, MoveSpeed, RotationSpeed, AvoidanceStrength, TraceDistance);
-
-            UnitArrivals.Add(bArrived);
+            FormationPositions.Add(UnitTargetLocation);
 
             ++Index;
         }
     }
 
-    return UnitArrivals; // Return the array of arrival statuses
+    return FormationPositions;
 }
+
+
+
 
