@@ -30,7 +30,7 @@ bool UUnit_BPFunctionLibrary::MoveUnitWithSteering(AActor* UnitActor, FVector Ta
             FHitResult HitResult;
             FCollisionQueryParams TraceParams;
             TraceParams.AddIgnoredActor(UnitActor);
-            ECollisionChannel CustomTraceChannel = ECC_GameTraceChannel1;
+            ECollisionChannel CustomTraceChannel = ECC_GameTraceChannel4;
             bool bHit = UnitActor->GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, CustomTraceChannel, TraceParams);
             return bHit;
         };
