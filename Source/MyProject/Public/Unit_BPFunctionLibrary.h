@@ -31,4 +31,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RTS Movement")
 	static TArray<FVector> GetFormationPositions(const FVector& TargetLocation, const TArray<AActor*>& Units, float Spacing);
 
+	UFUNCTION(BlueprintCallable, Category = "RTS Combat")
+	static bool AttackTarget(AActor* Attacker, AActor* Target, float DeltaTime, float AttackRate, float AttackRange,
+		FString TargetType, float BaseDamage, float DamageMultiplier, float MoveSpeed);
+
+
 };
