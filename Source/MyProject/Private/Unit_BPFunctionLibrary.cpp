@@ -100,7 +100,12 @@ TArray<FVector> UUnit_BPFunctionLibrary::GetFormationPositions(const FVector& Ta
 }
 
 //attacking targets, because units like to do that
-#include "Kismet/GameplayStatics.h" // Required for ApplyDamage
+
+#include "Kismet/GameplayStatics.h" // For ApplyDamage
+
+// Track movement & attack states
+static TMap<AActor*, bool> UnitMovementStatus;
+static TMap<AActor*, bool> UnitAttackStatus;
 
 bool UUnit_BPFunctionLibrary::AttackTarget(AActor* Attacker, AActor* Target, float DeltaTime, float AttackRate, float AttackRange,
     FString TargetType, float BaseDamage, float DamageMultiplier, float MoveSpeed, float RotationSpeed, float AvoidanceStrength, float TraceDistance)
@@ -111,24 +116,30 @@ bool UUnit_BPFunctionLibrary::AttackTarget(AActor* Attacker, AActor* Target, flo
     FVector TargetLocation = Target->GetActorLocation();
     float DistanceToTarget = FVector::Dist(AttackerLocation, TargetLocation);
 
-    // Move within attack range using obstacle avoidance
-    if (DistanceToTarget > AttackRange)
+    // Check if unit should move
+    bool bIsMoving = DistanceToTarget > AttackRange;
+    UnitMovementStatus.Add(Attacker, bIsMoving); // Store movement status
+
+    if (bIsMoving)
     {
+        // If the unit is moving, it is NOT attacking
+        UnitAttackStatus.Add(Attacker, false);
         MoveUnitWithSteering(Attacker, TargetLocation, DeltaTime, MoveSpeed, RotationSpeed, AvoidanceStrength, TraceDistance);
-        return false; // Still approaching target
+        return false;
     }
 
     // Ensure attacker faces the target before attacking
     FRotator DesiredRotation = (TargetLocation - AttackerLocation).Rotation();
     Attacker->SetActorRotation(FMath::RInterpTo(Attacker->GetActorRotation(), DesiredRotation, DeltaTime, RotationSpeed));
 
-    // Check if the attacker is facing the target before attacking
+    // Check if the attacker is facing the target
     FVector ForwardVector = Attacker->GetActorForwardVector();
     FVector DirectionToTarget = (TargetLocation - AttackerLocation).GetSafeNormal();
     float DotProduct = FVector::DotProduct(ForwardVector, DirectionToTarget);
 
-    if (DotProduct < 0.95f) // Not yet facing target, wait before attacking
+    if (DotProduct < 0.95f) // Not yet facing target
     {
+        UnitAttackStatus.Add(Attacker, false);
         return false;
     }
 
@@ -141,33 +152,45 @@ bool UUnit_BPFunctionLibrary::AttackTarget(AActor* Attacker, AActor* Target, flo
 
     if (World->GetTimeSeconds() - LastAttackTime < AttackRate)
     {
-        return false; // Still cooling down
+        //If not moving and in cooldown, still count as attacking
+        UnitAttackStatus.Add(Attacker, true);
+        return false;
     }
 
     // Update attack timer
     LastAttackTime = World->GetTimeSeconds();
 
-    // Calculate final damage based on target type
+    // Calculate damage
     float FinalDamage = BaseDamage;
-    if (TargetType == "Footman")
-    {
-        FinalDamage *= 1.0f;
-    }
-    else if (TargetType == "Archer")
-    {
-        FinalDamage *= 1.2f;
-    }
-    else if (TargetType == "Cavalry")
-    {
-        FinalDamage *= 0.8f;
-    }
+    if (TargetType == "Footman")      FinalDamage *= 1.0f;
+    else if (TargetType == "Archer")  FinalDamage *= 1.2f;
+    else if (TargetType == "Cavalry") FinalDamage *= 0.8f;
 
     FinalDamage *= DamageMultiplier;
 
-    // Apply damage using Unreal's built-in system
+    // Apply damage
     UGameplayStatics::ApplyDamage(Target, FinalDamage, Attacker->GetInstigatorController(), Attacker, nullptr);
 
-    return true; // Attack executed
+    //attacking because we are NOT moving
+    UnitAttackStatus.Add(Attacker, true);
+
+    return true;
+}
+
+
+
+
+
+
+bool UUnit_BPFunctionLibrary::IsUnitMoving(AActor* Unit)
+{
+    if (!Unit) return false;
+    return UnitMovementStatus.Contains(Unit) ? UnitMovementStatus[Unit] : false;
+}
+bool UUnit_BPFunctionLibrary::IsUnitAttacking(AActor* Unit)
+{
+    if (!Unit) return false;
+    return UnitAttackStatus.Contains(Unit) ? UnitAttackStatus[Unit] : false;
 }
 
 

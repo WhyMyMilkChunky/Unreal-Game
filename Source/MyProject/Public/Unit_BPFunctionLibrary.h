@@ -35,5 +35,10 @@ public:
 	static bool AttackTarget(AActor* Attacker, AActor* Target, float DeltaTime, float AttackRate, float AttackRange,
 		FString TargetType, float BaseDamage, float DamageMultiplier, float MoveSpeed, float RotationSpeed, float AvoidanceStrength, float TraceDistance);
 
+	UFUNCTION(BlueprintCallable, Category = "Unit Actions")
+	static bool IsUnitMoving(AActor* Unit);
+
+	UFUNCTION(BlueprintCallable, Category = "Unit Actions")
+	static bool IsUnitAttacking(AActor* Unit);
 
 };
