@@ -100,8 +100,10 @@ TArray<FVector> UUnit_BPFunctionLibrary::GetFormationPositions(const FVector& Ta
 }
 
 //attacking targets, because units like to do that
+#include "Kismet/GameplayStatics.h" // Required for ApplyDamage
+
 bool UUnit_BPFunctionLibrary::AttackTarget(AActor* Attacker, AActor* Target, float DeltaTime, float AttackRate, float AttackRange,
-    FString TargetType, float BaseDamage, float DamageMultiplier, float MoveSpeed)
+    FString TargetType, float BaseDamage, float DamageMultiplier, float MoveSpeed, float RotationSpeed, float AvoidanceStrength, float TraceDistance)
 {
     if (!Attacker || !Target) return false;
 
@@ -109,31 +111,43 @@ bool UUnit_BPFunctionLibrary::AttackTarget(AActor* Attacker, AActor* Target, flo
     FVector TargetLocation = Target->GetActorLocation();
     float DistanceToTarget = FVector::Dist(AttackerLocation, TargetLocation);
 
-    //too far? move closer, it's not rocket science
+    // Move within attack range using obstacle avoidance
     if (DistanceToTarget > AttackRange)
     {
-        FVector MoveDirection = (TargetLocation - AttackerLocation).GetSafeNormal();
-        FVector NewLocation = AttackerLocation + (MoveDirection * MoveSpeed * DeltaTime);
-        Attacker->SetActorLocation(NewLocation);
-        return false; // Still moving to target
+        MoveUnitWithSteering(Attacker, TargetLocation, DeltaTime, MoveSpeed, RotationSpeed, AvoidanceStrength, TraceDistance);
+        return false; // Still approaching target
+    }
+
+    // Ensure attacker faces the target before attacking
+    FRotator DesiredRotation = (TargetLocation - AttackerLocation).Rotation();
+    Attacker->SetActorRotation(FMath::RInterpTo(Attacker->GetActorRotation(), DesiredRotation, DeltaTime, RotationSpeed));
+
+    // Check if the attacker is facing the target before attacking
+    FVector ForwardVector = Attacker->GetActorForwardVector();
+    FVector DirectionToTarget = (TargetLocation - AttackerLocation).GetSafeNormal();
+    float DotProduct = FVector::DotProduct(ForwardVector, DirectionToTarget);
+
+    if (DotProduct < 0.95f) // Not yet facing target, wait before attacking
+    {
+        return false;
     }
 
     UWorld* World = Attacker->GetWorld();
     if (!World) return false;
 
-    //attack logic
+    // Attack cooldown logic
     static TMap<AActor*, float> AttackTimers;
     float& LastAttackTime = AttackTimers.FindOrAdd(Attacker);
 
     if (World->GetTimeSeconds() - LastAttackTime < AttackRate)
     {
-        return false;//cool down
+        return false; // Still cooling down
     }
 
-    //uupdate attack timer
+    // Update attack timer
     LastAttackTime = World->GetTimeSeconds();
 
-    //damage based on target type
+    // Calculate final damage based on target type
     float FinalDamage = BaseDamage;
     if (TargetType == "Footman")
     {
@@ -150,16 +164,13 @@ bool UUnit_BPFunctionLibrary::AttackTarget(AActor* Attacker, AActor* Target, flo
 
     FinalDamage *= DamageMultiplier;
 
-    UFunction* TakeDamageFunc = Target->FindFunction(FName("TakeDamage"));
-    if (TakeDamageFunc)
-    {
-        struct FDamageParams { float Damage; };
-        FDamageParams Params = { FinalDamage };
-        Target->ProcessEvent(TakeDamageFunc, &Params);
-    }
+    // Apply damage using Unreal's built-in system
+    UGameplayStatics::ApplyDamage(Target, FinalDamage, Attacker->GetInstigatorController(), Attacker, nullptr);
 
-    return true; //attack executed
+    return true; // Attack executed
 }
+
+
 
 
 

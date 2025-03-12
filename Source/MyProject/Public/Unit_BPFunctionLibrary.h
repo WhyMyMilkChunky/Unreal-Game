@@ -33,7 +33,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "RTS Combat")
 	static bool AttackTarget(AActor* Attacker, AActor* Target, float DeltaTime, float AttackRate, float AttackRange,
-		FString TargetType, float BaseDamage, float DamageMultiplier, float MoveSpeed);
+		FString TargetType, float BaseDamage, float DamageMultiplier, float MoveSpeed, float RotationSpeed, float AvoidanceStrength, float TraceDistance);
 
 
 };
